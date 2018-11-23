@@ -1,12 +1,94 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-br" dir="ltr">
-    <head>
-        <meta charset="utf-8">
-        <title>Alduxino</title>
-    </head>
-    <body>
-        <p>
-            This is a place holder for the main panel for the IOT project
-        </p>
-    </body>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Alduxino</title>
+    <script src="{% static 'chartist/chartist.min.js' %}"></script>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+
+    <link rel="stylesheet" href="{% static 'chartist/chartist.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bulma.css' %}">
+    <style media="screen">
+        .ct-series-a .ct-line, .ct-series-a .ct-point {stroke: #e55039;}
+        .ct-series-b .ct-line, .ct-series-b .ct-point {stroke: #60a3bc;}
+    </style>
+
+</head>
+<body>
+    <section class="section">
+        <div class="container">
+            <h1 class="title">
+                Alduxino
+            </h1>
+            <p class="subtitle">
+                Temperaturas lidas no dia <strong>{{current_date}}</strong>
+            </p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="ct-chart"></div>
+        </div>
+    </section>
+
+    <!-- Scripts -->
+    <script type="text/javascript">
+        var ticks = ['07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00',
+                     '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
+                     '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'];
+
+        var series_boiler = [];
+        var series_collectors = [];
+
+        $(document).ready(function(){
+            var dt_ini = "{{int_date}}T00:00";
+            var dt_fim = "{{int_date}}T23:59";
+            var url = "/solar/api/temperature-measurement/?measured_at__range={{start_time}},{{end_time}}";
+
+            $.getJSON(url, function( data ) {
+                var times_as_string = [];
+                var items_boiler = [];
+                var items_collectors = [];
+
+                $.each( data.objects, function( key, val ) {
+                    times_as_string.push(val.measured_at.substring(11,16));
+                    items_boiler.push(val.boilerTemperature);
+                    items_collectors.push(val.collectorsTemperature);
+                });
+
+                $.each(ticks, function(k,tick){
+                    var n_tick = Number(tick.replace(':', ''));
+                    var n_prox = 0;
+                    var pos = 0;
+                    $.each(times_as_string, function(k,v){
+                        var n_time = Number(v.replace(':', ''));
+                        if(n_tick > n_time){
+                            n_prox = n_time;
+                            pos = k;
+                        }
+                    });
+                    series_boiler.push(Number(items_boiler[pos]));
+                    series_collectors.push(Number(items_collectors[pos]));
+                });
+
+                /* Plot graph after data collected and processed */
+                new Chartist.Line('.ct-chart',
+                    {
+                        labels: ticks,
+                        series: [series_boiler, series_collectors]
+                    },
+                    {
+                        fullWidth: true,
+                        height: 300,
+                        chartPadding: {right: 40}
+                    }
+                );
+            });
+        });
+
+    </script>
+</body>
 </html>
