@@ -8,4 +8,7 @@ from alduxx import views
 urlpatterns = [
     path('', views.main_panel, name='main_panel'),
     path('solar/', include('solar.urls')),
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+]
+
+if settings.LOCAL_DEV:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
