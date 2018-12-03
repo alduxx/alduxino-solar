@@ -13,6 +13,12 @@
     <style media="screen">
         .ct-series-a .ct-line, .ct-series-a .ct-point {stroke: #e55039;}
         .ct-series-b .ct-line, .ct-series-b .ct-point {stroke: #60a3bc;}
+        .ct-label.ct-horizontal { position: relative; transform: rotate(90deg); transform-origin: left top; }
+        .ct-grid.ct-horizontal:nth-of-type(2),
+.ct-grid.ct-horizontal:nth-of-type(9) {
+  stroke-width: 3;
+  stroke-dasharray: 10px 5px;
+}
     </style>
 
 </head>
@@ -30,7 +36,7 @@
 
     <section class="section">
         <div class="container">
-            <div class="ct-chart"></div>
+            <div class="ct-chart ct-perfect-fourth"></div>
         </div>
     </section>
 
@@ -75,16 +81,37 @@
                 });
 
                 /* Plot graph after data collected and processed */
+                var ctResponsiveOptions = [
+                    ['screen and (min-width: 641px) and (max-width: 1024px)', {
+                        seriesBarDistance: 10,
+                        axisX: {
+                            labelInterpolationFnc: function (value) {
+                            return value;
+                        }
+                    }
+                    }],
+                    ['screen and (max-width: 640px)', {
+                        seriesBarDistance: 5,
+                        axisX: {
+                            labelInterpolationFnc: function(value, index) {
+                                return index % 2 === 0 ? value : '';
+                            }
+                        }
+                    }]
+                ];
+
+                var ctOptions = {
+                    fullWidth: true,
+                    height: 300,
+                    chartPadding: {right: 40},
+                    labelDirection: 'horizontal'
+                };
+
                 new Chartist.Line('.ct-chart',
                     {
                         labels: ticks,
                         series: [series_boiler, series_collectors]
-                    },
-                    {
-                        fullWidth: true,
-                        height: 300,
-                        chartPadding: {right: 40}
-                    }
+                    }, ctOptions, ctResponsiveOptions
                 );
             });
         });
