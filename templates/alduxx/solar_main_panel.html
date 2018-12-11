@@ -227,7 +227,7 @@
 
                     series: [{
                         name: 'Boiler',
-                        data: [{y: {{ last_reading.collectorsTemperature | floatformat }}, colorIndex: 99}],
+                        data: [{y: {{ last_reading.collectorsTemperature|stringformat:"d" }}, colorIndex: 99}],
                         dataLabels: {
                             format: '<div style="text-align:center"><span style="font-size:25px;color:' +
                                 ((Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black') + '">{y}</span><br/>' +
@@ -255,7 +255,7 @@
 
                     series: [{
                         name: 'Panels',
-                        data: [{y: {{ last_reading.boilerTemperature | floatformat }}, colorIndex: 99}],
+                        data: [{y: {{ last_reading.boilerTemperature|stringformat:"d" }}, colorIndex: 99}],
                         dataLabels: {
                             format: '<div style="text-align:center"><span style="font-size:25px;color:' +
                                 ((Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black') + '">{y}</span><br/>' +
