@@ -13,7 +13,8 @@ class TemperatureMeasurementResource(ModelResource):
             "measured_at": ['range'],
         }
 
-    #def get_object_list(self, request):
-    #    return super(TemperatureMeasurementResource, self).get_object_list(request).filter(measured_at__contains=datetime.date(2018, 11, 14))
-
-#measured_at__range=2018-11-14T00:00,2018-11-14T23:55
+class LastTemperatureMeasurementResource(ModelResource):
+    class Meta:
+        limit=1
+        queryset = TemperatureMeasurement.objects.all().order_by('-measured_at')
+        resource_name = 'last-temperature-measurement'

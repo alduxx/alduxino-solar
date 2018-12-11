@@ -1,0 +1,276 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Alduxino</title>
+    <script src="{% static 'highcharts/highcharts.js' %}"></script>
+    <script src="{% static 'highcharts/highcharts-more.js' %}"></script>
+    <script src="{% static 'highcharts/modules/solid-gauge.js' %}"></script>
+    <script src="{% static 'highcharts/modules/series-label.js' %}"></script>
+
+    <script src="{% static 'js/jquery-2.2.4.min.js' %}"></script>
+
+    <link rel="stylesheet" href="{% static 'highcharts/css/highcharts.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bulma.css' %}">
+    <style media="screen">
+        .gauge {
+        	height: 200px;
+        }
+        .highcharts-yaxis-grid .highcharts-grid-line {
+        	display: none;
+        }
+    </style>
+</head>
+<body>
+    <section class="section">
+        <div class="container">
+            <h1 class="title">
+                Alduxino
+            </h1>
+            <p class="subtitle">
+                Temperaturas lidas no dia <strong>{{current_date}}</strong>
+            </p>
+            <p class="is-size-6">
+                Última leitura:
+                {% if last_reading %}
+                    {{last_reading.measured_at | time:"H:i" }}
+                {% else %}
+                    <strong class="has-text-danger">Não disponível</strong>
+                {% endif %}
+            </p>
+        </div>
+    </section>
+
+    <section class="section" style="padding-top:0;">
+        <div class="columns">
+            <div id="container-boiler" class="gauge container column"></div>
+            <div id="container-panels" class="gauge container column"></div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="columns is-centered">
+            <div id="container-daily" class="column is-four-fifths"> </div>
+        </div>
+    </section>
+
+    <!-- Scripts -->
+    <script type="text/javascript">
+        var ticks = ['07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00',
+                     '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
+                     '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'];
+
+        var series_boiler = [];
+        var series_collectors = [];
+
+        $(document).ready(function(){
+            var dt_ini = "{{int_date}}T00:00";
+            var dt_fim = "{{int_date}}T23:59";
+            var url = "/solar/api/temperature-measurement/?measured_at__range={{start_time}},{{end_time}}";
+
+            $.getJSON(url, function( data ) {
+                var times_as_string = [];
+                var items_boiler = [];
+                var items_collectors = [];
+
+                $.each( data.objects, function( key, val ) {
+                    times_as_string.push(val.measured_at.substring(11,16));
+                    items_boiler.push(val.boilerTemperature);
+                    items_collectors.push(val.collectorsTemperature);
+                });
+
+                $.each(ticks, function(k,tick){
+                    var n_tick = Number(tick.replace(':', ''));
+                    var n_prox = 0;
+                    var pos = 0;
+                    $.each(times_as_string, function(k,v){
+                        var n_time = Number(v.replace(':', ''));
+                        if(n_tick > n_time){
+                            n_prox = n_time;
+                            pos = k;
+                        }
+                    });
+                    series_boiler.push(Number(items_boiler[pos]));
+                    series_collectors.push(Number(items_collectors[pos]));
+                });
+
+                /* Plot graph after data collected and processed */
+                Highcharts.chart('container-daily', {
+                  title: {
+                    text: 'Temperaturas Lidas Durante o Dia'
+                  },
+
+                  subtitle: {
+                    text: 'Fonte: Arduino'
+                  },
+                  xAxis: {
+                      categories: ticks
+                  },
+                  yAxis: {
+                    title: {
+                      text: 'Temperaturas em ºC'
+                    }
+                  },
+                    legend: {
+                      layout: 'horizontal',
+                      align: 'left',
+                      verticalAlign: 'top'
+                  },
+                  plotOptions: {
+                    line: {
+                        dataLabels: {
+                            enabled: true
+                        },
+                        enableMouseTracking: false
+                    },
+                  },
+
+                  series: [{
+                    name: 'Boiler',
+                    color: '#724EC4',
+                    data: series_boiler,
+                    label: { enabled : false }
+                  }, {
+                    name: 'Painéis',
+                    color: '#FF3860',
+                    data: series_collectors,
+                    label: { enabled : false }
+                  }],
+
+                  responsive: {
+                    rules: [{
+                      condition: {
+                        maxWidth: 500
+                      },
+                      chartOptions: {
+                        legend: {
+                          layout: 'horizontal',
+                          align: 'left',
+                          verticalAlign: 'top'
+                        }
+                      }
+                    }]
+                  }
+
+                });
+
+
+                /* Gauges */
+                var gaugeOptions = {
+                    chart: {
+                        type: 'solidgauge'
+                    },
+
+                    title: null,
+
+                    pane: {
+                        center: ['50%', '85%'],
+                        size: '130%',
+                        startAngle: -90,
+                        endAngle: 90,
+                        background: {
+                            backgroundColor: (Highcharts.theme && Highcharts.theme.background2) || '#EEE',
+                            innerRadius: '60%',
+                            outerRadius: '100%',
+                            shape: 'arc'
+                        }
+                    },
+
+                    tooltip: {
+                        enabled: false
+                    },
+
+                    // the value axis
+                    yAxis: {
+                        stops: [
+                            [0.15, '#2058D3'], // blue
+                            [0.3, '#DDDF0D'], // yellow
+                            [0.45, '#DF5353'] // red
+                        ],
+                        lineWidth: 0,
+                        minorTickInterval: null,
+                        tickAmount: 2,
+                        title: {
+                            y: -70
+                        },
+                        labels: {
+                            y: 16
+                        }
+                    },
+
+                    plotOptions: {
+                        solidgauge: {
+                            dataLabels: {
+                                y: 5,
+                                borderWidth: 0,
+                                useHTML: true
+                            }
+                        }
+                    }
+                };
+
+                // The boiler gauge
+                var chartBoiler = Highcharts.chart('container-boiler', Highcharts.merge(gaugeOptions, {
+                    yAxis: {
+                        min: 10,
+                        max: 100,
+                        title: {
+                            text: 'Boiler'
+                        }
+                    },
+
+                    credits: {
+                        enabled: false
+                    },
+
+                    series: [{
+                        name: 'Boiler',
+                        data: [{y: {{ last_reading.collectorsTemperature | floatformat }}, colorIndex: 99}],
+                        dataLabels: {
+                            format: '<div style="text-align:center"><span style="font-size:25px;color:' +
+                                ((Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black') + '">{y}</span><br/>' +
+                                   '<span style="font-size:12px;color:silver">ºC</span></div>'
+                        },
+                        tooltip: {
+                            valueSuffix: 'ºC'
+                        }
+                    }]
+                }));
+
+                // The panels gauge
+                var chartPanels = Highcharts.chart('container-panels', Highcharts.merge(gaugeOptions, {
+                    yAxis: {
+                        min: 10,
+                        max: 100,
+                        title: {
+                            text: 'Panels'
+                        }
+                    },
+
+                    credits: {
+                        enabled: false
+                    },
+
+                    series: [{
+                        name: 'Panels',
+                        data: [{y: {{ last_reading.boilerTemperature | floatformat }}, colorIndex: 99}],
+                        dataLabels: {
+                            format: '<div style="text-align:center"><span style="font-size:25px;color:' +
+                                ((Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black') + '">{y}</span><br/>' +
+                                   '<span style="font-size:12px;color:silver">ºC</span></div>'
+                        },
+                        tooltip: {
+                            valueSuffix: 'ºC'
+                        }
+                    }]
+
+                }));
+
+            });
+        });
+
+    </script>
+</body>
+</html>
